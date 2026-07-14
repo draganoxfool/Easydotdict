@@ -84,6 +84,15 @@ d.count.meaning = 'everything'
 # d == {'count': {'42': {'meaning': 'everything'}}}
 ```
 
+Scalar proxies support comparisons (`<`, `>`, `<=`, `>=`) and f-string formatting, delegating to the underlying value:
+
+```python
+d = dotdict()
+d.count = 42
+print(d.count > 10)   # True
+print(f"{d.count:05d}")  # 00042
+```
+
 ### Auto-Conversion
 
 Nested plain `dict`s and `list`s containing `dict`s are automatically wrapped:
@@ -291,6 +300,9 @@ Returns the value for `key` if it exists, otherwise `default`. Correctly disting
 | Access missing key via bracket `d['x']` | Returns `None` |
 | Access missing key via dot `d.x` | Returns `None` (via `_Missing` proxy) |
 | Set `d.a.b.c = value` with missing intermediates | Auto-creates intermediate `dotdict`s |
+| Set attribute on scalar `d.name = 'a'; d.name.x = 1` | Converts scalar to `{'a': {'x': 1}}` |
+| Compare scalar proxy `d.count > 10` | Delegates to underlying value |
+| Format scalar proxy `f'{d.name:>10}'` | Delegates to underlying value |
 | Dict in a list `[{'a': 1}]` | Dict becomes `dotdict` |
 | `d.to_dict()` | Recursively unwraps to plain `dict`/`list` |
 | `repr(d)` / `print(d)` | Indented JSON via `json.dumps(indent=2)` |

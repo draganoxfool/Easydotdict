@@ -10,6 +10,9 @@ print(d.user.profile.name)       # Alice
 print(d['user'].profile.name)    # same
 print(d.user.email)              # None (safe, no error)
 
+d.name = 'Alice'
+d.name.character = 5  # auto-converts scalar -> nested: {'Alice': {'character': 5}}
+
 d.config.database.host = 'localhost'  # auto-creates path
 d.put('server.port', 8080)            # or use path string
 print(d.dig('user.name'))             # Alice (deep path getter)
@@ -27,6 +30,7 @@ print(d)                                # indented JSON
 - **Dual access** — dot and bracket notation work interchangeably
 - **Safe access** — `d.missing` returns `None`, no `KeyError`/`AttributeError`
 - **Auto-vivification** — `d.a.b.c = value` auto-creates intermediate structures
+- **Scalar auto-conversion** — `d.name = 'Alice'; d.name.character = 5` wraps scalar into `{'Alice': {'character': 5}}`
 - **Deep path operations** — `dig`, `put`, `has` with dot-separated strings
 - **Flatten / Unflatten** — recursive flatten and restore with `flatten()` and `unflatten()`
 - **Deep merge** — `update()` and `merge()` merge recursively, preserving existing keys
@@ -34,6 +38,8 @@ print(d)                                # indented JSON
 - **Empty check** — `is_empty()` checks if the dict has no keys
 - **Auto-conversion** — nested `dict`s and `list`s containing `dict`s are wrapped automatically
 - **Pretty-print** — `print(d)` outputs indented JSON
+- **Comparisons** — scalars support `<`, `>`, `<=`, `>=` comparisons
+- **f-string ready** — format specs like `{d.name:>10}` delegate to the underlying value
 - **`to_dict()`** — recursively converts back to plain `dict`s and `list`s
 - **Pure Python** — standard library only, Python 3.8+
 
