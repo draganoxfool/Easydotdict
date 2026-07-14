@@ -3,9 +3,9 @@
 Make nested dictionaries effortless — dot-notation access, safe missing-key handling, auto-vivification, deep path operations, and pretty-printing. Pure Python, no dependencies.
 
 ```python
-from easydotdict import EasyDict
+from easydotdict import dotdict
 
-d = EasyDict({'user': {'profile': {'name': 'Alice'}}})
+d = dotdict({'user': {'profile': {'name': 'Alice'}}})
 print(d.user.profile.name)       # Alice
 print(d['user'].profile.name)    # same
 print(d.user.email)              # None (safe, no error)
@@ -15,7 +15,7 @@ d.put('server.port', 8080)            # or use path string
 print(d.dig('user.name'))             # Alice (deep path getter)
 
 flat = d.flatten()                    # {'user.profile.name': 'Alice', ...}
-restored = EasyDict.unflatten(flat)   # reverse
+restored = dotdict.unflatten(flat)   # reverse
 
 d.merge({'settings': {'debug': True}})  # deep merge
 print(d)                                # indented JSON

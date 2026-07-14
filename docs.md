@@ -19,9 +19,9 @@ Or copy `easydotdict/easydotdict.py` into your project.
 ## Getting Started
 
 ```python
-from easydotdict import EasyDict
+from easydotdict import dotdict
 
-d = EasyDict({'user': {'profile': {'name': 'Alice'}}})
+d = dotdict({'user': {'profile': {'name': 'Alice'}}})
 print(d.user.profile.name)  # Alice
 ```
 
@@ -34,7 +34,7 @@ print(d.user.profile.name)  # Alice
 Access and set values with either style interchangeably:
 
 ```python
-d = EasyDict()
+d = dotdict()
 d.user.name = 'Alice'
 d.user['age'] = 30
 
@@ -47,7 +47,7 @@ print(d['user'].age) # 30
 Dot notation returns `None` for missing keys — no `KeyError` or `AttributeError`:
 
 ```python
-d = EasyDict({'a': 1})
+d = dotdict({'a': 1})
 print(d.user.email)  # None (safe, like JS optional chaining)
 print(d['b'])        # None
 print(d.get('b'))    # None
@@ -58,7 +58,7 @@ print(d.get('b'))    # None
 Create deep nested structures in one statement:
 
 ```python
-d = EasyDict()
+d = dotdict()
 d.config.database.host = 'localhost'
 d.config.database.port = 5432
 # d == {'config': {'database': {'host': 'localhost', 'port': 5432}}}
@@ -70,9 +70,9 @@ Nested plain `dict`s and `list`s containing `dict`s are automatically wrapped:
 
 ```python
 data = {'users': [{'name': 'Alice'}, {'name': 'Bob'}]}
-d = EasyDict(data)
+d = dotdict(data)
 print(d.users[0].name)  # Alice
-print(type(d.users[0])) # <class 'easydotdict.EasyDict'>
+print(type(d.users[0])) # <class 'easydotdict.dotdict'>
 ```
 
 ### Pretty-Printing
@@ -80,7 +80,7 @@ print(type(d.users[0])) # <class 'easydotdict.EasyDict'>
 `repr()` and `str()` produce indented JSON output:
 
 ```python
-d = EasyDict({'name': 'Alice', 'scores': [90, 95]})
+d = dotdict({'name': 'Alice', 'scores': [90, 95]})
 print(d)
 # {
 #   "name": "Alice",
@@ -96,7 +96,7 @@ print(d)
 Use dot-separated path strings for nested access:
 
 ```python
-d = EasyDict({'user': {'name': 'Alice'}})
+d = dotdict({'user': {'name': 'Alice'}})
 print(d.dig('user.name'))       # Alice
 print(d.dig('user.missing'))    # None
 
@@ -112,11 +112,11 @@ print(d.has('user.email'))  # False
 Convert nested structures to/from flat dot-separated keys:
 
 ```python
-d = EasyDict({'user': {'name': 'Alice', 'scores': [90, 95]}})
+d = dotdict({'user': {'name': 'Alice', 'scores': [90, 95]}})
 flat = d.flatten()
 # flat == {'user.name': 'Alice', 'user.scores.0': 90, 'user.scores.1': 95}
 
-restored = EasyDict.unflatten({'a.b.c': 1})
+restored = dotdict.unflatten({'a.b.c': 1})
 print(restored.a.b.c)  # 1
 ```
 
@@ -125,7 +125,7 @@ print(restored.a.b.c)  # 1
 Merge another dict recursively, preserving existing keys:
 
 ```python
-d = EasyDict({'user': {'name': 'Alice', 'age': 30}})
+d = dotdict({'user': {'name': 'Alice', 'age': 30}})
 d.update({'user': {'email': 'alice@example.com'}})
 print(d.user.email)  # alice@example.com
 print(d.user.name)   # Alice (preserved)
@@ -137,7 +137,7 @@ print(d.settings.debug)  # True
 ### Convert Back to Plain Dict
 
 ```python
-d = EasyDict({'user': {'name': 'Alice'}})
+d = dotdict({'user': {'name': 'Alice'}})
 plain = d.to_dict()
 # plain == {'user': {'name': 'Alice'}}
 # type(plain['user']) == dict
@@ -147,15 +147,15 @@ plain = d.to_dict()
 
 ## API Reference
 
-### `EasyDict(*args, **kwargs)`
+### `dotdict(*args, **kwargs)`
 
-Creates a new `EasyDict`. Accepts the same arguments as `dict()`:
+Creates a new `dotdict`. Accepts the same arguments as `dict()`:
 
 ```python
-EasyDict()                    # empty
-EasyDict({'a': 1})            # from dict
-EasyDict(a=1, b=2)            # from keyword args
-EasyDict([('a', 1), ('b', 2)])  # from iterable
+dotdict()                    # empty
+dotdict({'a': 1})            # from dict
+dotdict(a=1, b=2)            # from keyword args
+dotdict([('a', 1), ('b', 2)])  # from iterable
 ```
 
 ---
@@ -192,7 +192,7 @@ Bracket-notation write. Wraps nested `dict`s and `list`s automatically.
 
 #### `to_dict()`
 
-Recursively converts all nested `EasyDict`s back to plain `dict`s and `list`s.
+Recursively converts all nested `dotdict`s back to plain `dict`s and `list`s.
 
 #### `flatten(prefix='')`
 
@@ -200,7 +200,7 @@ Recursively flattens the structure into a flat dict with dot-separated keys. Lis
 
 #### `unflatten(data)` *(class method)*
 
-Reverses `flatten()`. Converts a flat dict with dot-separated keys back into a nested `EasyDict`. Numeric keys are converted to lists.
+Reverses `flatten()`. Converts a flat dict with dot-separated keys back into a nested `dotdict`. Numeric keys are converted to lists.
 
 ---
 
@@ -212,7 +212,7 @@ Traverse a dot-separated path string. Returns the value or `None` if any segment
 
 #### `put(path, value)`
 
-Traverse a dot-separated path string, creating intermediate `EasyDict`s as needed, then set the value.
+Traverse a dot-separated path string, creating intermediate `dotdict`s as needed, then set the value.
 
 #### `has(path)`
 
@@ -236,15 +236,15 @@ Deep merge, same as `update()` but returns `self` for chaining.
 
 #### `copy()`
 
-Returns a deep copy as a new `EasyDict`.
+Returns a deep copy as a new `dotdict`.
 
 #### `clone()`
 
-Explicit deep copy. Returns a new `EasyDict` with all nested structures recursively copied.
+Explicit deep copy. Returns a new `dotdict` with all nested structures recursively copied.
 
 #### `is_empty()`
 
-Returns `True` if the `EasyDict` has no keys.
+Returns `True` if the `dotdict` has no keys.
 
 #### `get(key, default=None)`
 
@@ -254,7 +254,7 @@ Returns the value for `key` if it exists, otherwise `default`. Correctly disting
 
 ## Inheritance & Compatibility
 
-`EasyDict` inherits from `dict`, so all standard dict methods work:
+`dotdict` inherits from `dict`, so all standard dict methods work:
 
 - `keys()`, `values()`, `items()`
 - `pop(key, *args)`
@@ -270,8 +270,8 @@ Returns the value for `key` if it exists, otherwise `default`. Correctly disting
 |----------|----------|
 | Access missing key via bracket `d['x']` | Returns `None` |
 | Access missing key via dot `d.x` | Returns `None` (via `_Missing` proxy) |
-| Set `d.a.b.c = value` with missing intermediates | Auto-creates intermediate `EasyDict`s |
-| Dict in a list `[{'a': 1}]` | Dict becomes `EasyDict` |
+| Set `d.a.b.c = value` with missing intermediates | Auto-creates intermediate `dotdict`s |
+| Dict in a list `[{'a': 1}]` | Dict becomes `dotdict` |
 | `d.to_dict()` | Recursively unwraps to plain `dict`/`list` |
 | `repr(d)` / `print(d)` | Indented JSON via `json.dumps(indent=2)` |
 | `bool(d)` | `False` when empty (inherited from `dict`) |
@@ -283,6 +283,6 @@ Returns the value for `key` if it exists, otherwise `default`. Correctly disting
 
 ## Limitations
 
-- Keys that clash with `EasyDict` method names (e.g., `keys`, `values`, `items`, `update`, `copy`, `get`, `to_dict`) shadow the method when accessed via dot notation. Use bracket notation to access the method, or key the data under a different name.
+- Keys that clash with `dotdict` method names (e.g., `keys`, `values`, `items`, `update`, `copy`, `get`, `to_dict`) shadow the method when accessed via dot notation. Use bracket notation to access the method, or key the data under a different name.
 - Keys starting with `_` cannot be accessed via dot notation — use bracket notation instead.
 - `hasattr(d, 'missing')` returns `True` because `__getattr__` returns a `_Missing` proxy instead of raising `AttributeError`.

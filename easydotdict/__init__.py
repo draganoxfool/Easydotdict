@@ -1,4 +1,4 @@
-from .easydotdict import EasyDict
+from .easydotdict import dotdict
 
 __version__ = "1.0.0"
-__all__ = ["EasyDict", "__version__"]
+__all__ = ["dotdict", "__version__"]

@@ -51,14 +51,14 @@ class _Missing:
         current = obj
         for key in reversed(path):
             if key not in current:
-                current[key] = EasyDict()
+                current[key] = dotdict()
             current = current[key]
         return current
 
 
 def _wrap(value):
-    if isinstance(value, dict) and not isinstance(value, EasyDict):
-        return EasyDict(value)
+    if isinstance(value, dict) and not isinstance(value, dotdict):
+        return dotdict(value)
     elif isinstance(value, list):
         return _convert_list(value)
     return value
@@ -67,8 +67,8 @@ def _wrap(value):
 def _convert_list(lst):
     result = []
     for item in lst:
-        if isinstance(item, dict) and not isinstance(item, EasyDict):
-            result.append(EasyDict(item))
+        if isinstance(item, dict) and not isinstance(item, dotdict):
+            result.append(dotdict(item))
         elif isinstance(item, list):
             result.append(_convert_list(item))
         else:
@@ -78,18 +78,18 @@ def _convert_list(lst):
 
 def _deep_merge(target, source):
     for key, value in source.items():
-        if key in target and isinstance(target[key], EasyDict) and isinstance(value, dict):
+        if key in target and isinstance(target[key], dotdict) and isinstance(value, dict):
             _deep_merge(target[key], value)
         else:
             target[key] = value
 
 
-class EasyDict(dict):
+class dotdict(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for key, value in list(super().items()):
-            if isinstance(value, dict) and not isinstance(value, EasyDict):
-                super().__setitem__(key, EasyDict(value))
+            if isinstance(value, dict) and not isinstance(value, dotdict):
+                super().__setitem__(key, dotdict(value))
             elif isinstance(value, list):
                 super().__setitem__(key, _convert_list(value))
 
@@ -131,11 +131,11 @@ class EasyDict(dict):
     def to_dict(self):
         result = {}
         for key, value in self.items():
-            if isinstance(value, EasyDict):
+            if isinstance(value, dotdict):
                 result[key] = value.to_dict()
             elif isinstance(value, list):
                 result[key] = [
-                    item.to_dict() if isinstance(item, EasyDict) else item
+                    item.to_dict() if isinstance(item, dotdict) else item
                     for item in value
                 ]
             else:
@@ -146,7 +146,7 @@ class EasyDict(dict):
         return self.clone()
 
     def clone(self):
-        return EasyDict(self.to_dict())
+        return dotdict(self.to_dict())
 
     def update(self, other=None, **kwargs):
         if other is not None:
@@ -186,7 +186,7 @@ class EasyDict(dict):
         current = self
         for key in keys[:-1]:
             if key not in current:
-                current[key] = EasyDict()
+                current[key] = dotdict()
             current = current[key]
         current[keys[-1]] = value
 
@@ -204,12 +204,12 @@ class EasyDict(dict):
         result = {}
         for key, value in self.items():
             full_key = f'{prefix}.{key}' if prefix else str(key)
-            if isinstance(value, EasyDict):
+            if isinstance(value, dotdict):
                 result.update(value.flatten(prefix=full_key))
             elif isinstance(value, list):
                 for i, item in enumerate(value):
                     item_key = f'{full_key}.{i}'
-                    if isinstance(item, EasyDict):
+                    if isinstance(item, dotdict):
                         result.update(item.flatten(prefix=item_key))
                     else:
                         result[item_key] = item
@@ -243,9 +243,9 @@ class EasyDict(dict):
             lst = [None] * (max_idx + 1)
             for k in keys:
                 idx = int(k)
-                lst[idx] = EasyDict._lists_from_dict(d[k])
+                lst[idx] = dotdict._lists_from_dict(d[k])
             return lst
-        return {k: EasyDict._lists_from_dict(v) for k, v in d.items()}
+        return {k: dotdict._lists_from_dict(v) for k, v in d.items()}
 
     def is_empty(self):
         return len(self) == 0
