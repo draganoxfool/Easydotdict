@@ -1,39 +1,52 @@
 """
-example: app_config.py — Manage nested app settings with dot notation
+example: app_config.py — Persist and edit app config using a JSON file
+Usage:   python app_config.py          # show current config
+         python app_config.py --reset  # reset to defaults
 """
 
 from easydotdict import dotdict
+from json import dump, load
+from pathlib import Path
+from sys import argv
 
-config = dotdict()
+CONFIG_FILE = Path("config.json")
 
-config.app.name = "MyApp"
-# ^^ Auto-vivification: `config.app` is created on the fly.
+DEFAULTS = dotdict({
+    "app": {
+        "theme": "dark",
+        "locale": "en-US",
+    },
+    "editor": {
+        "font_size": 14,
+        "tab_spaces": 4,
+        "word_wrap": True,
+    },
+    "shortcuts": {
+        "save": "Ctrl+S",
+        "find": "Ctrl+F",
+    },
+})
 
-config.app.version = "2.1.0"
-config.app.debug = False
-config.app.features.dark_mode = True
-config.app.features.export_pdf = True
-config.app.features.export_csv = False
-# ^^ Deep nesting in one flat sequence of assignments.
-#    No pre-declaration of `features` as an empty dotdict.
+if "--reset" in argv:
+    with open(CONFIG_FILE, "w") as f:
+        dump(DEFAULTS.to_dict(), f, indent=2)
+    print("Config reset to defaults.")
+    config = DEFAULTS
 
-config.database.host = "localhost"
-config.database.port = 5432
-config.database.credentials.user = "admin"
-config.database.credentials.password = "secret"
-# ^^ Credentials deeply nested for logical grouping.
+elif CONFIG_FILE.exists():
+    with open(CONFIG_FILE) as f:
+        config = dotdict(load(f))
+    print("Loaded existing config.")
 
-config.logging.level = "INFO"
-config.logging.format = "{time} {level} {message}"
+else:
+    config = DEFAULTS
+    with open(CONFIG_FILE, "w") as f:
+        dump(config.to_dict(), f, indent=2)
+    print("Created default config.")
 
-if config.app.debug:
-    config.logging.level = "DEBUG"
-# ^^ Reading via dot notation — returns None for missing keys
-#    instead of raising KeyError/AttributeError.
+theme = config.app.theme
+font = config.editor.font_size
+wrap = config.editor.word_wrap
 
-print("Config:", config)
-# ^^ Pretty-prints the whole nested structure as JSON.
-
-print(f"DB host: {config.database.host}")
-# ^^ Dot access on deeply nested path: three levels deep.
-print(f"Dark mode: {config.app.features.dark_mode}")
+print(f"Theme: {theme}  |  Font size: {font}  |  Word wrap: {wrap}")
+print(f"Shortcuts: save={config.shortcuts.save}  find={config.shortcuts.find}")

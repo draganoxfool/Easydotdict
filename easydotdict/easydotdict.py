@@ -95,11 +95,19 @@ class _ValueProxy:
             return True
         return self._value != other
 
+    def __lt__(self, other):   return self._value < other
+    def __le__(self, other):   return self._value <= other
+    def __gt__(self, other):   return self._value > other
+    def __ge__(self, other):   return self._value >= other
+
     def __repr__(self):
         return repr(self._value)
 
     def __str__(self):
         return str(self._value)
+
+    def __format__(self, spec):
+        return format(self._value, spec)
 
     def __hash__(self):
         return hash(self._value)

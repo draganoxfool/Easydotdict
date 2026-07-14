@@ -1,33 +1,27 @@
 """
-example: api_response.py — Wrap a raw dict / JSON response for ergonomic access
+example: api_response.py — Fetch live data from an API and work with it
+Uses:    JSONPlaceholder (free, no API key needed)
 """
 
+from urllib.request import urlopen
+from json import loads
 from easydotdict import dotdict
 
-raw = {
-    "user": {
-        "name": "Alice",
-        "address": {"city": "Berlin", "zip": "10115"},
-        "scores": [90, 85, 92],
-    }
-}
+url = "https://jsonplaceholder.typicode.com/users/1"
 
-d = dotdict(raw)
-# ^^ Wrap a plain dict in dotdict. Nested dicts are auto-converted
-#    to dotdict, lists with dicts inside them are also converted.
+with urlopen(url) as r:
+    data = loads(r.read())
 
-avg = sum(d.user.scores) / len(d.user.scores)
-# ^^ Dot notation to reach a list inside a nested dict.
-print(f"{d.user.name} — avg score: {avg:.1f}")
-print(f"Lives in {d.user.address.city}")
+user = dotdict(data)
 
-if d.user.address.zip:
-    d.user.address.country = "Germany"
-    # ^^ Add new keys to nested dotdicts after creation.
+print(f"Name:    {user.name}")
+print(f"Email:   {user.email}")
+print(f"City:    {user.address.city}")
+print(f"Company: {user.company.name}")
 
-del d.user.scores
-# ^^ Delete keys using dot notation (__delattr__).
+user.phone = "N/A"
+user.address.zipcode = "Unknown"
 
-print(d)
-# ^^ Print the modified structure as pretty JSON.
-#    Lists and nested dicts are handled automatically.
+print(f"\nGeo: {user.address.geo.lat}, {user.address.geo.lng}")
+
+print(user)
