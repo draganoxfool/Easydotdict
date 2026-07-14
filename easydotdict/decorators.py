@@ -5,10 +5,9 @@ from .easydotdict import dotdict
 def dotdictify(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
-        if isinstance(result, dict) and not isinstance(result, dotdict):
-            return dotdict(result)
-        return result
+        if args and isinstance(args[0], dict) and not isinstance(args[0], dotdict):
+            args = (dotdict(args[0]),) + args[1:]
+        return func(*args, **kwargs)
     return wrapper
 
 

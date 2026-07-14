@@ -387,11 +387,25 @@ class dotdict(dict):
             keys = path.split('.')
             current = self
             for key in keys[:-1]:
-                current = current[key]
+                if isinstance(current, list) and key.isdigit():
+                    idx = int(key)
+                    if idx < len(current):
+                        current = current[idx]
+                    else:
+                        current = None
+                        break
+                else:
+                    current = current[key]
                 if current is None:
                     break
             if current is not None:
-                del current[keys[-1]]
+                last = keys[-1]
+                if isinstance(current, list) and last.isdigit():
+                    idx = int(last)
+                    if idx < len(current):
+                        del current[idx]
+                else:
+                    del current[last]
         return self
 
     def dig(self, path):
@@ -403,6 +417,12 @@ class dotdict(dict):
                     current = dict.__getitem__(current, key)
                 except KeyError:
                     return None
+            elif isinstance(current, list) and key.isdigit():
+                idx = int(key)
+                if idx < len(current):
+                    current = current[idx]
+                else:
+                    return None
             else:
                 return None
         return current
@@ -413,14 +433,32 @@ class dotdict(dict):
         keys = path.split('.')
         current = self
         for key in keys[:-1]:
-            if key not in current:
-                current[key] = dotdict()
-                _set_parent(current[key], current, key)
-            current = current[key]
+            if isinstance(current, list) and key.isdigit():
+                idx = int(key)
+                if idx >= len(current):
+                    current.append(dotdict())
+                    _set_parent(current[-1], current, idx)
+                current = current[idx]
+            else:
+                if isinstance(current, dict) and key not in current:
+                    current[key] = dotdict()
+                    _set_parent(current[key], current, key)
+                current = current[key]
+        last = keys[-1]
         value = _wrap(value)
-        _set_parent(value, current, keys[-1])
-        dict.__setitem__(current, keys[-1], value)
-        _notify_change(current, keys[-1], value)
+        if isinstance(current, list) and last.isdigit():
+            idx = int(last)
+            if idx >= len(current):
+                current.append(value)
+            else:
+                current[idx] = value
+            if isinstance(value, dotdict):
+                _set_parent(value, current, idx)
+            _notify_change(current, idx, value)
+        else:
+            _set_parent(value, current, last)
+            dict.__setitem__(current, last, value)
+            _notify_change(current, last, value)
 
     def has(self, path):
         keys = path.split('.')
@@ -428,6 +466,12 @@ class dotdict(dict):
         for key in keys:
             if isinstance(current, dict) and key in current:
                 current = dict.__getitem__(current, key)
+            elif isinstance(current, list) and key.isdigit():
+                idx = int(key)
+                if idx < len(current):
+                    current = current[idx]
+                else:
+                    return False
             else:
                 return False
         return True
