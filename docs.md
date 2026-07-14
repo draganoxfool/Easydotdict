@@ -247,6 +247,17 @@ Traverse a dot-separated path string, creating intermediate `dotdict`s as needed
 
 Returns `True` if the dot-separated path exists, `False` otherwise.
 
+#### `get(path, default=None)`
+
+Supports both single keys and dot-separated deep paths. Returns the value or `default` if any segment is missing. Correctly distinguishes between a key whose value is `None` and a missing key.
+
+```python
+d = dotdict({'user': {'name': 'Alice'}})
+d.get('user.name')      # 'Alice'
+d.get('user.email')     # None
+d.get('user.email', 'n/a')  # 'n/a'
+```
+
 ---
 
 ### Mutation
@@ -258,6 +269,133 @@ Deep merge update. Recursively merges nested dicts, preserving existing keys. Wr
 #### `merge(other)`
 
 Deep merge, same as `update()` but returns `self` for chaining.
+
+#### `set_many(items)`
+
+Set multiple values from a flat `{path: value}` dict. Creates intermediate structures as needed:
+
+```python
+d = dotdict()
+d.set_many({'a.b.c': 1, 'x.y': 2})
+# d.a.b.c == 1, d.x.y == 2
+```
+
+#### `delete(*paths)`
+
+Delete one or more dot-separated paths. No error if a path doesn't exist:
+
+```python
+d = dotdict({'a': {'b': 1, 'c': 2}, 'x': 3})
+d.delete('a.b', 'x')
+# d == {'a': {'c': 2}}
+```
+
+---
+
+### Diff & Patch
+
+#### `diff(other)`
+
+Compare two `dotdict`s and return a flat mapping of changed paths in `{path: {'from': old, 'to': new}}` format. Paths present in one side only use `None` for the missing side:
+
+```python
+v1 = dotdict({'app': {'name': 'MyApp', 'debug': True}})
+v2 = dotdict({'app': {'name': 'MyApp', 'debug': False, 'version': '2.0'}})
+d = v1.diff(v2)
+# {
+#   'app.debug':     {'from': True,  'to': False},
+#   'app.version':   {'from': None,  'to': '2.0'},
+# }
+```
+
+#### `patch(changes)`
+
+Apply the output of `diff()` (or any `{path: {'to': value}}` dict) directly to the current `dotdict`:
+
+```python
+v1.patch(d)
+# v1.app.version == '2.0'
+```
+
+---
+
+### Cursors
+
+#### `cursor(path, create=False)`
+
+Returns a lightweight view that reads/writes through to the underlying `dotdict` at the given path. Mutations via the cursor affect the original. If `create=True`, intermediate paths are auto-created when setting:
+
+```python
+d = dotdict({'db': {'host': 'localhost'}})
+c = d.cursor('db')
+c.port = 5432
+print(d.db.port)  # 5432
+```
+
+---
+
+### Search
+
+#### `find(name)`
+
+Search recursively for all keys matching the given name. Returns a sorted list of dot-separated paths to each match:
+
+```python
+d = dotdict({'a': {'b': 1, 'c': {'b': 2}}, 'x': {'b': 3}})
+d.find('b')
+# ['a.b', 'a.c.b', 'x.b']
+```
+
+---
+
+### Type Validation
+
+#### `expect(schema)`
+
+Validate types at runtime. Accepts a `{path: type}` schema. Raises `KeyError` if a required path is missing, or `TypeError` if the value doesn't match the expected type:
+
+```python
+user = dotdict({'name': 'Alice', 'age': 30})
+user.expect({'name': str, 'age': int})  # passes
+user.expect({'email': str})             # KeyError: missing
+```
+
+---
+
+### Change Tracking
+
+#### `on_change(path, callback)`
+
+Register a callback that fires when a value at the given dot-separated path is set. The callback receives `(path, new_value)`. Only direct assignments trigger the callback:
+
+```python
+config = dotdict()
+config.app.debug = True
+
+config.on_change('app.debug', lambda p, v: print(f'{p} set to {v}'))
+config.app.debug = False  # prints: app.debug set to False
+```
+
+---
+
+### Freezing
+
+#### `freeze()`, `unfreeze()`, `is_frozen`
+
+Freeze a `dotdict` to prevent further modifications. Any `__setattr__`, `__setitem__`, `__delattr__`, or `__delitem__` call on a frozen instance raises `AttributeError`:
+
+```python
+d = dotdict({'key': 'value'})
+d.freeze()
+d.key = 'new'     # raises AttributeError
+d.new_key = 'x'   # raises AttributeError
+del d.key          # raises AttributeError
+
+d.unfreeze()
+d.key = 'new'     # works
+
+print(d.is_frozen)  # False
+```
 
 ---
 
@@ -275,9 +413,67 @@ Explicit deep copy. Returns a new `dotdict` with all nested structures recursive
 
 Returns `True` if the `dotdict` has no keys.
 
-#### `get(key, default=None)`
+---
 
-Returns the value for `key` if it exists, otherwise `default`. Correctly distinguishes between a key whose value is `None` and a missing key.
+## Decorators
+
+Decorators are available directly from `easydotdict`:
+
+```python
+from easydotdict import dotdictify, defaults, expect_schema, freeze
+```
+
+#### `@dotdictify`
+
+Wraps a function so that the first positional argument (typically a dict) is automatically converted to a `dotdict`:
+
+```python
+@dotdictify
+def process(data):
+    print(data.user.name)  # data is now a dotdict
+
+process({'user': {'name': 'Alice'}})
+```
+
+#### `@defaults(**defaults)`
+
+Apply default values to a `dotdict` before the function body runs:
+
+```python
+@defaults(page=1, limit=20)
+def list_items(params):
+    # params.page defaults to 1, params.limit to 20
+    pass
+
+list_items(dotdict())                    # page=1, limit=20
+list_items(dotdict({'page': 5}))         # page=5, limit=20
+```
+
+#### `@expect_schema(schema)`
+
+Validate the first positional argument at call time using the same schema format as `dotdict.expect()`:
+
+```python
+@expect_schema({'name': str, 'age': int})
+def save_user(user):
+    pass  # only reached if types match
+
+save_user(dotdict({'name': 'Alice', 'age': 30}))  # ok
+save_user(dotdict({'name': 123}))                  # TypeError
+```
+
+#### `@freeze`
+
+Freezes the return value if it is a `dotdict`, preventing accidental mutation after return:
+
+```python
+@freeze
+def get_config():
+    return dotdict({'debug': True})
+
+cfg = get_config()
+# cfg is now frozen — cfg.debug = False would raise AttributeError
+```
 
 ---
 
@@ -310,6 +506,10 @@ Returns the value for `key` if it exists, otherwise `default`. Correctly disting
 | `d.keys()` / `d.values()` / `d.items()` | Standard dict behavior |
 | Dict key shadows method name (e.g., `items`) | Dict value takes priority |
 | `d == None` when `d` is missing-key proxy | `True` (proxy compares equal to `None`) |
+| `d.freeze()` then mutate | Raises `AttributeError` |
+| `d.on_change(path, cb)` then set path | Fires `cb(path, new_value)` |
+| `d.diff(other)` | Returns `{path: {'from': ..., 'to': ...}}` |
+| `d.find(name)` | Returns sorted list of dot-paths to matches |
 
 ---
 
