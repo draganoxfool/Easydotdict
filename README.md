@@ -1,55 +1,70 @@
 # easydotdict
 
-Make nested dictionaries effortless — dot-notation access, safe missing-key handling, auto-vivification, deep path operations, and pretty-printing. Pure Python, no dependencies.
+**Navigate nested dictionaries with the simplicity of attribute access.**  
+Zero dependencies. Python 3.8+.
 
 ```python
 from easydotdict import dotdict
 
-d = dotdict({'user': {'profile': {'name': 'Alice'}}})
-print(d.user.profile.name)       # Alice
-print(d['user'].profile.name)    # same
-print(d.user.email)              # None (safe, no error)
+d = dotdict({"user": {"profile": {"name": "Alice"}}})
 
-d.name = 'Alice'
-d.name.character = 5  # auto-converts scalar -> nested: {'Alice': {'character': 5}}
+# Read deeply with dot notation
+print(d.user.profile.name)   # Alice
+print(d["user"].profile.name)  # same, dual access
 
-d.config.database.host = 'localhost'  # auto-creates path
-d.put('server.port', 8080)            # or use path string
-print(d.dig('user.name'))             # Alice (deep path getter)
+# Safe missing-key access — no exceptions
+print(d.user.email)          # None
 
-flat = d.flatten()                    # {'user.profile.name': 'Alice', ...}
-restored = dotdict.unflatten(flat)   # reverse
+# Auto-create nested paths on assignment
+d.config.database.host = "localhost"
 
-d.merge({'settings': {'debug': True}})  # deep merge
-print(d)                                # indented JSON
+# Scalar auto-conversion — string becomes a key
+d.name = "Alice"
+d.name.character = 5  # {"name": {"Alice": {"character": 5}}}
+
+# Deep path string methods
+d.put("server.port", 8080)
+print(d.dig("user.name"))    # Alice
+
+# Compare, diff, and migrate
+v1 = dotdict({"app": {"debug": True}})
+v2 = dotdict({"app": {"debug": False, "version": "2.0"}})
+changes = v1.diff(v2)
+v1.patch(changes)            # v1 now matches v2
+
+# Recursive flatten and restore
+flat = d.flatten()
+restored = dotdict.unflatten(flat)
+
+# Deep merge with key preservation
+d.merge({"settings": {"theme": "dark"}})
+
+# Pretty-printed JSON output
+print(d)
 ```
 
 ## Features
 
-- **Dot notation** — `d.user.profile.name` instead of `d['user']['profile']['name']`
-- **Dual access** — dot and bracket notation work interchangeably
-- **Safe access** — `d.missing` returns `None`, no `KeyError`/`AttributeError`
-- **Auto-vivification** — `d.a.b.c = value` auto-creates intermediate structures
-- **Scalar auto-conversion** — `d.name = 'Alice'; d.name.character = 5` wraps scalar into `{'Alice': {'character': 5}}`
-- **Deep path operations** — `dig`, `put`, `has`, `get` with dot-separated strings
-- **Cursors** — lightweight views into nested paths that mutate the original via `cursor(path)`
-- **Diff & Patch** — compare two dotdicts with `diff()`, apply changes with `patch()`
-- **Batch operations** — `set_many({path: value})` and `delete(*paths)` for bulk work
-- **Search** — `find(name)` returns all dot-paths matching a key name
-- **Type validation** — `expect(schema)` validates types at runtime
-- **Change tracking** — `on_change(path, cb)` fires callbacks on mutation
-- **Freeze** — `freeze()` / `unfreeze()` prevents further modification
-- **Flatten / Unflatten** — recursive flatten and restore with `flatten()` and `unflatten()`
-- **Deep merge** — `update()` and `merge()` merge recursively, preserving existing keys
-- **Clone** — `clone()` returns a deep independent copy
-- **Empty check** — `is_empty()` checks if the dict has no keys
-- **Auto-conversion** — nested `dict`s and `list`s containing `dict`s are wrapped automatically
-- **Pretty-print** — `print(d)` outputs indented JSON
-- **Comparisons** — scalars support `<`, `>`, `<=`, `>=` comparisons
-- **f-string ready** — format specs like `{d.name:>10}` delegate to the underlying value
-- **`to_dict()`** — recursively converts back to plain `dict`s and `list`s
-- **Decorators** — `@dotdictify`, `@defaults`, `@expect_schema`, `@freeze` 
-- **Pure Python** — standard library only, Python 3.8+
+| Category | Capabilities |
+|---|---|
+| **Access** | Dot notation (`d.user.name`), bracket notation (`d["user"]`), dual interchangeability |
+| **Safety** | Missing keys return `None` — no `KeyError` or `AttributeError` |
+| **Auto-vivification** | `d.a.b.c = value` creates intermediate structures automatically |
+| **Scalar conversion** | `d.name = "Alice"; d.name.x = 1` promotes scalars to nested dicts |
+| **Deep paths** | `dig()`, `get()`, `put()`, `has()` with dot-separated strings; handles list indices (`users.0.name`) |
+| **Flatten / Unflatten** | Recursive flatten to dot-keys and restoration via `unflatten()` |
+| **Deep merge** | `update()` and `merge()` merge recursively, preserving existing keys |
+| **Diff & Patch** | `diff(other)` produces `{path: {"from": ..., "to": ...}}`; `patch()` applies changes |
+| **Batch operations** | `set_many({path: value})` and `delete(*paths)` for bulk mutations |
+| **Search** | `find(name)` locates all dot-paths matching a key name anywhere in the tree |
+| **Cursor** | Lightweight views into nested paths — mutations affect the original |
+| **Type validation** | `expect(schema)` validates types at runtime; `@expect_schema` for functions |
+| **Change tracking** | `on_change(path, cb)` fires callbacks on mutation |
+| **Freeze** | `freeze()` / `unfreeze()` enforces immutability; `@freeze` for return values |
+| **Decorators** | `@dotdictify` converts arguments, `@defaults` supplies fallbacks |
+| **Comparisons** | Scalars support `<`, `>`, `<=`, `>=` and f-string formatting |
+| **Serialisation** | `to_dict()` unwraps to plain `dict` / `list`; pretty-printed JSON via `print()` |
+| **Compatibility** | Full `dict` subclass — `keys()`, `items()`, `pop()`, `len()`, `in`, etc. all work |
 
 ## Install
 
@@ -59,7 +74,16 @@ pip install easydotdict
 
 ## Documentation
 
-See [docs.md](docs.md) for full API reference, edge cases, and examples.
+Full API reference, edge case table, and decorator guide: [docs.md](docs.md)
+
+Real-world examples:
+
+- [`api_response.py`](example/api_response.py) — consume a JSON API endpoint
+- [`app_config.py`](example/app_config.py) — load, edit, and persist application configuration
+- [`product_catalog.py`](example/product_catalog.py) — enrich GitHub repository data
+- [`config_manager.py`](example/config_manager.py) — validate, watch, freeze, and bulk-override settings
+- [`data_migration.py`](example/data_migration.py) — diff, patch, find, and validate between data versions
+- [`github_stars.py`](example/github_stars.py) — analyse repository metadata with find, diff, cursor, and expect
 
 ## License
 
